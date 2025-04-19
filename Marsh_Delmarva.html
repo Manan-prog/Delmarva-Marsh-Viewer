@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Delmarva Marsh Year Comparison</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/light/main.css" />
+  <script src="https://js.arcgis.com/4.29/"></script>
+  <style>
+    html, body, #viewDiv {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 10;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+    }
+    select {
+      margin-left: 6px;
+    }
+    #flashCard {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      width: 500px;
+      text-align: center;
+      z-index: 1000;
+    }
+    #flashCard h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    #flashCard p {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    #visualizeBtn {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    #visualizeBtn:hover {
+      background-color: #45a049;
+    }
+    .blurred {
+      filter: blur(5px);
+    }
+  </style>
+</head>
+<body>
+  <div id="viewDiv" class="blurred"></div>
+  <div id="flashCard">
+    <h2>Welcome!</h2>
+    <h1>Track Annual Marsh Change in Delmarva (2019–2023)</h1>
+    <p>Visualize the fractional marsh cover per pixel over time. Use the swipe tool on top right to select two years, then drag the slider to compare the changes in marsh extent.</p>
+    <button id="visualizeBtn">Let's Visualize!</button>
+  </div>
+  <div id="controls">
+    <label>
+      Left Year:
+      <select id="leftYear">
+        <option value="2019" selected>2019</option>
+        <option value="2020">2020</option>
+        <option value="2021">2021</option>
+        <option value="2022">2022</option>
+        <option value="2023">2023</option>
+      </select>
+    </label>
+    <label>
+      Right Year:
+      <select id="rightYear">
+        <option value="2019">2019</option>
+        <option value="2020">2020</option>
+        <option value="2021">2021</option>
+        <option value="2022">2022</option>
+        <option value="2023" selected>2023</option>
+      </select>
+    </label>
+  </div>
+
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/ImageryTileLayer",
+      "esri/widgets/Swipe",
+      "esri/renderers/ClassBreaksRenderer",
+      "esri/widgets/Legend"
+    ], function(Map, MapView, ImageryTileLayer, Swipe, ClassBreaksRenderer, Legend) {
+
+      const classifiedRenderer = new ClassBreaksRenderer({
+        field: "value",
+        classBreakInfos: [
+          {
+            minValue: 0,
+            maxValue: 0.25,
+            label: "25 - 50% (Low)",
+            symbol: { type: "simple-fill", color: "#d2b48c", outline: null }
+          },
+          {
+            minValue: 0.25,
+            maxValue: 0.5,
+            label: "50 - 75% (Medium)",
+            symbol: { type: "simple-fill", color: "#ffffcc", outline: null }
+          },
+          {
+            minValue: 0.5,
+            maxValue: 1,
+            label: "75 - 100% (High)",
+            symbol: { type: "simple-fill", color: "#008080", outline: null }
+          }
+        ]
+      });
+
+      const urls = {
+        2019: "https://tiledimageservices.arcgis.com/DCPX1PuggGH4Tici/arcgis/rest/services/DelmarvaCropped_Marsh_Mean_2019Marsh/ImageServer",
+        2020: "https://tiledimageservices.arcgis.com/DCPX1PuggGH4Tici/arcgis/rest/services/DelmarvaCropped_Marsh_Mean_2020Marsh/ImageServer",
+        2021: "https://tiledimageservices.arcgis.com/DCPX1PuggGH4Tici/arcgis/rest/services/DelmarvaCropped_Marsh_Mean_2021Marsh/ImageServer",
+        2022: "https://tiledimageservices.arcgis.com/DCPX1PuggGH4Tici/arcgis/rest/services/DelmarvaCropped_Marsh_Mean_2022Marsh/ImageServer",
+        2023: "https://tiledimageservices.arcgis.com/DCPX1PuggGH4Tici/arcgis/rest/services/DelmarvaCropped_Marsh_Mean_2023Marsh/ImageServer"
+      };
+
+      const layers = {};
+      for (const year in urls) {
+        layers[year] = new ImageryTileLayer({
+          url: urls[year],
+          renderer: classifiedRenderer,
+          title: `${year} Marsh`
+        });
+      }
+
+      const map = new Map({
+        basemap: "satellite",
+        layers: [layers[2023], layers[2019]]
+      });
+
+      const view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [-75.4, 38.7],
+        zoom: 10
+      });
+
+      const legend = new Legend({
+        view: view,
+        layerInfos: [{
+          layer: layers[2023],
+          title: "Area of pixel covered by marsh (%)"
+        }]
+      });
+      view.ui.add(legend, "bottom-left");
+
+      const swipe = new Swipe({
+        view: view,
+        leadingLayers: [layers[2023]],
+        trailingLayers: [layers[2019]],
+        position: 50
+      });
+      view.ui.add(swipe);
+
+      function updateLayer(position, year) {
+        const prevLayer = swipe[position + "Layers"].items[0];
+        if (prevLayer.title !== swipe[(position === "leading" ? "trailing" : "leading") + "Layers"].items[0].title) {
+          map.remove(prevLayer);
+        }
+
+        if (!map.layers.includes(layers[year])) {
+          map.add(layers[year]);
+        }
+
+        swipe[position + "Layers"].removeAll();
+        swipe[position + "Layers"].add(layers[year]);
+      }
+
+      document.getElementById("leftYear").addEventListener("change", function(e) {
+        updateLayer("leading", e.target.value);
+      });
+
+      document.getElementById("rightYear").addEventListener("change", function(e) {
+        const year = e.target.value;
+        updateLayer("trailing", year);
+
+        // Update legend to match new trailing (right) layer
+        legend.layerInfos = [{
+          layer: layers[year],
+          title: "Area of pixel covered by marsh (%)"
+        }];
+      });
+
+      document.getElementById("visualizeBtn").addEventListener("click", function() {
+        document.getElementById("flashCard").style.display = "none";
+        document.getElementById("viewDiv").classList.remove("blurred");
+      });
+
+    });
+  </script>
+</body>
+</html>
