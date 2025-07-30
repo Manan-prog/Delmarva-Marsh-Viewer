@@ -152,27 +152,27 @@
         });
       }
 
-      // const map = new Map({
-      //   basemap: "satellite",
-      //   layers: [layers[2023], layers[2019]]
-      // });
-      const topoVectorLayer = new VectorTileLayer({
-        portalItem: {
-          id: "1cbbd3a262a14fb6a5ef3f30f4b146c0"
-        },
-        opacity: 0.35
-      });
-      
-      const topoBasemap = new Basemap({
-        baseLayers: [topoVectorLayer],
-        title: "Transparent Topo Vector",
-        id: "custom-topo"
-      });
-      
       const map = new Map({
-        basemap: topoBasemap,
+        basemap: "satellite",
         layers: [layers[2023], layers[2019]]
       });
+      // const topoVectorLayer = new VectorTileLayer({
+      //   portalItem: {
+      //     id: "1cbbd3a262a14fb6a5ef3f30f4b146c0"
+      //   },
+      //   opacity: 0.35
+      // });
+      
+      // const topoBasemap = new Basemap({
+      //   baseLayers: [topoVectorLayer],
+      //   title: "Transparent Topo Vector",
+      //   id: "custom-topo"
+      // });
+      
+      // const map = new Map({
+      //   basemap: topoBasemap,
+      //   layers: [layers[2023], layers[2019]]
+      // });
 
       const view = new MapView({
         container: "viewDiv",
